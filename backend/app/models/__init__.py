@@ -226,6 +226,8 @@ class Patrol(Base):
     checkpoints_scanned: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     object: Mapped[Object] = relationship(back_populates="patrols")
+    route: Mapped[Route] = relationship()
+    started_by: Mapped[User | None] = relationship()
     scans: Mapped[list["ScanEvent"]] = relationship(back_populates="patrol")
     violations: Mapped[list["Violation"]] = relationship(back_populates="patrol")
 
