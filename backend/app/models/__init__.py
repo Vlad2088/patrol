@@ -16,8 +16,13 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY, JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.types import JSON
+
+# JSONB/ARRAY на PostgreSQL; JSON/строка — на SQLite (тесты); совместимые типы
+JSONType = JSONB().with_variant(JSON(), "sqlite")
+ARRAYType = PG_ARRAY(Integer).with_variant(String(), "sqlite")
 
 
 class Base(DeclarativeBase):
@@ -137,12 +142,9 @@ class PatrolSchedule(Base):
     """Расписание порождения обходов (шаблон)."""
 
     __tablename__ = "patrol_schedules"
-    __table_args__ = (
-        CheckConstraint(
-            "kind != 'weekly' OR array_length(weekdays, 1) >= 1",
-            name="ck_schedule_weekdays_not_empty",
-        ),
-    )
+    # NOTE: для PostgreSQL констрейнт ck_schedule_weekdays_not_empty
+    # (array_length(weekdays,1) >= 1) живёт в Alembic-миграции;
+    # SQLite (тесты) не знает array_length.
 
     id: Mapped[int] = mapped_column(primary_key=True)
     route_id: Mapped[int] = mapped_column(
@@ -153,7 +155,7 @@ class PatrolSchedule(Base):
     )
     # once: конкретная дата; weekly: дни недели 1..7 (ISO, пн=1)
     once_date: Mapped[date | None] = mapped_column(Date)
-    weekdays: Mapped[list[int] | None] = mapped_column(ARRAY(Integer))
+    weekdays: Mapped[list[int] | None] = mapped_column(ARRAYType)
     shift_kind: Mapped[ShiftKind | None] = mapped_column(
         Enum(ShiftKind, name="shift_kind", native_enum=False)
     )
@@ -273,7 +275,7 @@ class Violation(Base):
     kind: Mapped[ViolationKind] = mapped_column(
         Enum(ViolationKind, name="violation_kind", native_enum=False), nullable=False
     )
-    details: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    details: Mapped[dict] = mapped_column(JSONType, default=dict, nullable=False)
     detected_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -292,7 +294,7 @@ class AuditLog(Base):
     action: Mapped[str] = mapped_column(String(32), nullable=False)  # create/update/delete
     entity: Mapped[str] = mapped_column(String(64), nullable=False)
     entity_id: Mapped[int | None] = mapped_column(Integer)
-    payload: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    payload: Mapped[dict] = mapped_column(JSONType, default=dict, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

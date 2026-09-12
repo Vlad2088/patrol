@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
+from app.core.scheduler import start_scheduler, stop_scheduler
 from app.routers import audit, auth, dashboard, guards, mobile, objects, patrols, reports, routes, schedules, shifts
 
 settings = get_settings()
@@ -13,6 +14,16 @@ app = FastAPI(
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",
 )
+
+
+@app.on_event("startup")
+def _start() -> None:
+    start_scheduler(app)
+
+
+@app.on_event("shutdown")
+def _stop() -> None:
+    stop_scheduler()
 
 app.add_middleware(
     CORSMiddleware,
