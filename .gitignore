@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+
+# Android
+*.apk
+*.aab
+.gradle/
+build/
+local.properties
+
+# OS/editor
+.DS_Store
+Thumbs.db
