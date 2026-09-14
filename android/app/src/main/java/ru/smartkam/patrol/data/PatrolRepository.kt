@@ -14,7 +14,7 @@ enum class ScanVerdict { ACCEPTED, DUPLICATE, WRONG_CHECKPOINT, OUT_OF_ORDER, NO
 
 data class ScanOutcome(val verdict: ScanVerdict, val message: String, val checkpointName: String? = null)
 
-class PatrolRepository(private val dao: PatrolDao) {
+class PatrolRepository(val dao: PatrolDao) {
 
     suspend fun fullSync() {
         val data = ApiClient.api.sync()
