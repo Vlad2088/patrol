@@ -21,6 +21,7 @@ export default function LoginPage() {
         setError("Веб-кабинет только для диспетчеров");
         authStore.clear();
       } else {
+        authStore.set(t); // сохранить токены ДО перехода
         nav("/");
       }
     } catch (err) {
