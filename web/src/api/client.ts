@@ -1,5 +1,7 @@
 // API-клиент: fetch с JWT, refresh-логика, типизированные методы
-const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8100/api/v1";
+// По умолчанию — тот же origin (кабинет и API за одним nginx); для локальной
+// разработки против uvicorn — VITE_API_URL=http://localhost:8100 в .env
+const BASE = (import.meta.env.VITE_API_URL ?? "") + "/api/v1";
 
 export interface TokenPair {
   access: string;
