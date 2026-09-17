@@ -1,5 +1,6 @@
 """Движок обходов: материализация расписаний, валидация сканов, нарушения."""
 from datetime import date, datetime, time, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -20,8 +21,9 @@ from app.models import (
 
 settings = get_settings()
 
-# Локальный пояс сервера для материализации окон (dev: UTC; прод — по месту)
-TZ = timezone.utc
+# Окна расписаний задаются «настенным» временем объектов в этом поясе.
+# В БД хранится абсолютный момент (UTC), в UI отображается в поясе браузера.
+TZ = ZoneInfo(settings.facility_tz)
 
 
 def _window_for_date(sched: PatrolSchedule, d: date) -> tuple[datetime, datetime]:
@@ -39,6 +41,7 @@ def materialize_patrols(db: Session, now: datetime) -> int:
     scheds = list(
         db.scalars(select(PatrolSchedule).where(PatrolSchedule.is_active.is_(True)))
     )
+    local_now = now.astimezone(TZ)
     for sched in scheds:
         route = db.get(Route, sched.route_id)
         if route is None or not route.is_active:
@@ -46,12 +49,12 @@ def materialize_patrols(db: Session, now: datetime) -> int:
 
         days: set[date] = set()
         if sched.kind == "once":
-            if sched.once_date is not None and now.date() <= sched.once_date:
+            if sched.once_date is not None and local_now.date() <= sched.once_date:
                 days.add(sched.once_date)
         else:
             # daily / weekly / shift: смотрим 2 дня (окно может переходить через полночь)
             for offset in (0, 1):
-                d = (now + timedelta(days=offset)).date()
+                d = (local_now + timedelta(days=offset)).date()
                 if sched.kind == "daily":
                     days.add(d)
                 elif sched.kind == "weekly":

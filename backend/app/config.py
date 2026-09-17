@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     window_grace_after_min: int = 15   # допуск опоздания отметки
     materialize_horizon_hours: int = 24
 
+    # Рабочий часовой пояс объектов: окна расписаний задаются «настенным» временем
+    # в этом поясе (не UTC). Все объекты пока в одном поясе.
+    facility_tz: str = "Asia/Kamchatka"
+
     # CORS (web cabinet origin)
     cors_origins: list[str] = ["http://localhost:5173"]
 
