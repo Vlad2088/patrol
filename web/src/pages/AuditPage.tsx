@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { Table } from "../components/ui";
+import { fmtDateTime, useFacilityTz } from "../lib/date";
 
 const ACTION_LABEL: Record<string, string> = {
   create: "Создание",
@@ -19,6 +20,7 @@ const ENTITY_LABEL: Record<string, string> = {
 };
 
 export default function AuditPage() {
+  useFacilityTz();
   const { data: audit, isLoading } = useQuery({ queryKey: ["audit"], queryFn: api.audit });
 
   return (
@@ -28,7 +30,7 @@ export default function AuditPage() {
         <Table head={["Когда", "Пользователь", "Действие", "Сущность", "ID", "Детали"]}>
           {(audit ?? []).map((a) => (
             <tr key={a.id}>
-              <td className="small">{new Date(a.created_at).toLocaleString("ru-RU")}</td>
+              <td className="small">{fmtDateTime(a.created_at)}</td>
               <td>#{a.user_id}</td>
               <td>{ACTION_LABEL[a.action] ?? a.action}</td>
               <td>{ENTITY_LABEL[a.entity] ?? a.entity}</td>

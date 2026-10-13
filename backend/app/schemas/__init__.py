@@ -309,6 +309,7 @@ class MobileSyncOut(BaseModel):
     checkpoints: list[MobileCheckpoint]
     patrols: list[MobilePatrol]
     shifts: list[MobileShift]
+    facility_tz: str = "Asia/Kamchatka"
 
 
 class ScanIn(BaseModel):

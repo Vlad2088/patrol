@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.core.scheduler import start_scheduler, stop_scheduler
-from app.routers import audit, auth, dashboard, guards, mobile, objects, patrols, reports, routes, schedules, shifts
+from app.routers import audit, auth, config, dashboard, guards, mobile, objects, patrols, reports, routes, schedules, shifts
 
 settings = get_settings()
 
@@ -36,6 +36,7 @@ app.add_middleware(
 PREFIX = settings.api_prefix
 
 app.include_router(auth.router, prefix=PREFIX, tags=["auth"])
+app.include_router(config.router, prefix=PREFIX, tags=["config"])
 app.include_router(objects.router, prefix=PREFIX, tags=["objects"])
 app.include_router(routes.router, prefix=PREFIX, tags=["routes"])
 app.include_router(schedules.router, prefix=PREFIX, tags=["schedules"])

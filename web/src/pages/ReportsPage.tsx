@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { api, authStore } from "../api/client";
 import { Field } from "../components/ui";
+import { todayIsoFacility, isoFacilityShifted, useFacilityTz } from "../lib/date";
 
-const iso = (d: Date) => { const off = d.getTimezoneOffset(); return new Date(d.getTime() - off * 60_000).toISOString().slice(0, 10); };
 
 function download(kind: "patrols" | "violations", fmt: "csv" | "xlsx", from: string, to: string) {
   const q = new URLSearchParams();
@@ -24,9 +24,9 @@ function download(kind: "patrols" | "violations", fmt: "csv" | "xlsx", from: str
 }
 
 export default function ReportsPage() {
-  const monthAgo = new Date(Date.now() - 30 * 86400_000);
-  const [from, setFrom] = useState(iso(monthAgo));
-  const [to, setTo] = useState(iso(new Date()));
+  useFacilityTz();
+  const [from, setFrom] = useState(isoFacilityShifted(-30));
+  const [to, setTo] = useState(todayIsoFacility());
 
   return (
     <div>

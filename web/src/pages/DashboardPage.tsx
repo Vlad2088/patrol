@@ -3,10 +3,11 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { Table } from "../components/ui";
-import { todayIso } from "../lib/date";
+import { todayIsoFacility as todayIso, fmtDateTime, useFacilityTz } from "../lib/date";
 
 
 export default function DashboardPage() {
+  useFacilityTz(); // активирует пояс объекта для форматтеров
   const [date, setDate] = useState(todayIso());
   const { data, isLoading, error } = useQuery({
     queryKey: ["dashboard", date],
@@ -50,7 +51,7 @@ export default function DashboardPage() {
       <Table head={["Когда зафиксировано", "Тип", "Обход", "Детали"]}>
         {(violations ?? []).slice(0, 20).map((v) => (
           <tr key={v.id}>
-            <td>{new Date(v.detected_at).toLocaleString("ru-RU")}</td>
+            <td>{fmtDateTime(v.detected_at)}</td>
             <td>{v.kind === "missed_patrol" ? "Пропуск обхода" : "Непройденные точки"}</td>
             <td>#{v.patrol_id}</td>
             <td className="mono small">{JSON.stringify(v.details).slice(0, 120)}</td>

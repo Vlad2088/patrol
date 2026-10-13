@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { StatusBadge, Table } from "../components/ui";
-import { todayIso } from "../lib/date";
+import { todayIsoFacility as todayIso, fmtTime, useFacilityTz } from "../lib/date";
 
 
 const STATUSES = [
@@ -16,6 +16,7 @@ const STATUSES = [
 ];
 
 export default function PatrolsPage() {
+  useFacilityTz();
   const [date, setDate] = useState(todayIso());
   const [objectId, setObjectId] = useState("");
   const [status, setStatus] = useState("");
@@ -52,14 +53,14 @@ export default function PatrolsPage() {
               <td>{p.object_name}</td>
               <td>{p.route_name}</td>
               <td className="small">
-                {new Date(p.window_start).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+                {fmtTime(p.window_start)}
                 –
-                {new Date(p.window_end).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+                {fmtTime(p.window_end)}
               </td>
               <td><StatusBadge status={p.status} /></td>
               <td>{p.checkpoints_scanned}/{p.checkpoints_total}</td>
-              <td>{p.started_at ? new Date(p.started_at).toLocaleTimeString("ru-RU") : "—"}</td>
-              <td>{p.finished_at ? new Date(p.finished_at).toLocaleTimeString("ru-RU") : "—"}</td>
+              <td>{p.started_at ? fmtTime(p.started_at) : "—"}</td>
+              <td>{p.finished_at ? fmtTime(p.finished_at) : "—"}</td>
             </tr>
           ))}
         </Table>

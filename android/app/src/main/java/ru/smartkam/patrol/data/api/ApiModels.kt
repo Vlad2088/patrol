@@ -41,6 +41,7 @@ data class SyncResponse(
     val checkpoints: List<ApiCheckpoint>,
     val patrols: List<ApiPatrol>,
     val shifts: List<ApiShift>,
+    @SerializedName("facility_tz") val facilityTz: String? = null,
 )
 
 data class ScanItem(

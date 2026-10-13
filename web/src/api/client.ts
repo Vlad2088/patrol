@@ -170,4 +170,6 @@ export const api = {
   reportUrl: (kind: "patrols" | "violations", fmt: "csv" | "xlsx") => `${BASE}/reports/${kind}.${fmt}`,
 
   audit: () => request<AuditT[]>("/audit"),
+
+  config: () => request<{ facility_tz: string }>("/config"),
 };

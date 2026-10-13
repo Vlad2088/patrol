@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 
+from app.config import get_settings
 from app.core.deps import CurrentUser, require_guard
 from app.db import get_db
 from app.models import (
@@ -85,6 +86,7 @@ def sync(
         checkpoints=[MobileCheckpoint.model_validate(c) for c in checkpoints],
         patrols=[MobilePatrol.model_validate(p) for p in patrols],
         shifts=[MobileShift.model_validate(s) for s in shifts],
+        facility_tz=get_settings().facility_tz,
     )
 
 
@@ -101,8 +103,6 @@ def start_patrol(
         return PatrolStartOut(ok=False, message="Обход уже завершён или пропущен")
 
     # охранник должен быть в смене на объекте (по времени — с допуском grace)
-    from app.config import get_settings
-
     st = get_settings()
     now = datetime.now(timezone.utc)
     on_shift = db.scalar(

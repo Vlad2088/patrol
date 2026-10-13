@@ -4,10 +4,16 @@ import type { FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { Field, Table } from "../components/ui";
-import { todayIso } from "../lib/date";
+import {
+  facilityWallToUtcIso,
+  fmtDateTime,
+  todayIsoFacility as todayIso,
+  useFacilityTz,
+} from "../lib/date";
 
 
 export default function ShiftsPage() {
+  useFacilityTz();
   const qc = useQueryClient();
   const [date, setDate] = useState(todayIso());
   const { data: shifts } = useQuery({ queryKey: ["shifts", date], queryFn: () => api.shifts({ date }) });
@@ -22,8 +28,8 @@ export default function ShiftsPage() {
       return api.createShift({
         object_id: Number(form.object_id),
         guard_id: Number(form.guard_id),
-        starts_at: new Date(`${d}T${form.starts_at}:00`).toISOString(),
-        ends_at: new Date(`${d}T${form.ends_at}:00`).toISOString(),
+        starts_at: facilityWallToUtcIso(d, form.starts_at),
+        ends_at: facilityWallToUtcIso(d, form.ends_at),
       });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["shifts"] }),
@@ -73,8 +79,8 @@ export default function ShiftsPage() {
           <tr key={s.id}>
             <td>{s.object_name}</td>
             <td>{s.guard_full_name}</td>
-            <td>{new Date(s.starts_at).toLocaleString("ru-RU")}</td>
-            <td>{new Date(s.ends_at).toLocaleString("ru-RU")}</td>
+            <td>{fmtDateTime(s.starts_at)}</td>
+            <td>{fmtDateTime(s.ends_at)}</td>
             <td><button className="btn-ghost" onClick={() => del.mutate(s.id)}>Удалить</button></td>
           </tr>
         ))}

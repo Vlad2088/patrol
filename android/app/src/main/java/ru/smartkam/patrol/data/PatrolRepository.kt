@@ -7,7 +7,9 @@ import ru.smartkam.patrol.data.api.ScanItem
 import ru.smartkam.patrol.data.db.PatrolDao
 import ru.smartkam.patrol.data.db.ScanQueueEntity
 import ru.smartkam.patrol.data.db.ScannedCheckpointEntity
+import ru.smartkam.patrol.ui.screens.FacilityTz
 import java.time.Instant
+import java.time.ZoneId
 import java.util.UUID
 
 enum class ScanVerdict { ACCEPTED, DUPLICATE, WRONG_CHECKPOINT, OUT_OF_ORDER, NO_ACTIVE_PATROL }
@@ -18,6 +20,10 @@ class PatrolRepository(val dao: PatrolDao) {
 
     suspend fun fullSync() {
         val data = ApiClient.api.sync()
+        // Пояс объекта: все времена рендерим в нём, а не в поясе устройства
+        data.facilityTz?.let { tz ->
+            try { FacilityTz.zone = ZoneId.of(tz) } catch (_: Exception) { /* дефолт */ }
+        }
         dao.clearRoutes(); dao.insertRoutes(data.routes.map { ru.smartkam.patrol.data.db.RouteEntity(it.id, it.objectId, it.name) })
         dao.clearCheckpoints(); dao.insertCheckpoints(data.checkpoints.map { ru.smartkam.patrol.data.db.CheckpointEntity(it.id, it.routeId, it.orderNum, it.code, it.name) })
         dao.clearPatrols(); dao.insertPatrols(data.patrols.map { ru.smartkam.patrol.data.db.PatrolEntity(it.id, it.objectId, it.routeId, it.windowStart, it.windowEnd, it.status, it.checkpointsTotal, it.checkpointsScanned) })
