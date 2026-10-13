@@ -24,7 +24,12 @@ from app.models import (
     Violation,
     ViolationKind,
 )
-from app.services.patrol_engine import detect_violations, materialize_patrols, validate_scan
+from app.services.patrol_engine import (
+    detect_violations,
+    finish_patrol,
+    materialize_patrols,
+    validate_scan,
+)
 
 NOW = datetime(2026, 9, 11, 12, 0, tzinfo=timezone.utc)
 
@@ -193,3 +198,45 @@ def test_violation_missed_points(db, world):
     assert v.kind == ViolationKind.MISSED_POINTS
     assert v.details["missed_codes"] == [world["cps"][1].code, world["cps"][2].code]
     assert p.status == PatrolStatus.PARTIAL
+
+
+# --- ручное завершение (finish) ---
+
+def test_finish_full(db, world):
+    p = _make_patrol(world, db, status=PatrolStatus.IN_PROGRESS, scanned=0)
+    for i, cp in enumerate(world["cps"]):
+        validate_scan(db, p, cp, world["guard"].id, f"f-{i}",
+                      NOW.replace(hour=10, minute=5 + i), NOW)
+    msg = finish_patrol(db, p, NOW.replace(hour=10, minute=45))
+    assert p.status == PatrolStatus.COMPLETED
+    assert p.finished_at is not None
+    assert "полностью" in msg
+    assert db.query(Violation).count() == 0
+
+
+def test_finish_partial_creates_violation(db, world):
+    p = _make_patrol(world, db, status=PatrolStatus.IN_PROGRESS, scanned=0)
+    validate_scan(db, p, world["cps"][0], world["guard"].id, "fp-1",
+                  NOW.replace(hour=10, minute=5), NOW)
+    msg = finish_patrol(db, p, NOW.replace(hour=10, minute=30))
+    assert p.status == PatrolStatus.PARTIAL
+    assert p.finished_at is not None
+    v = db.query(Violation).one()
+    assert v.kind == ViolationKind.MISSED_POINTS
+    assert v.details["missed_codes"] == [world["cps"][1].code, world["cps"][2].code]
+    assert v.details["manually_finished"] is True
+    # автофиксация после окна не дублирует нарушение и не трогает статус
+    assert detect_violations(db, NOW.replace(hour=13)) == 0
+    assert p.status == PatrolStatus.PARTIAL
+
+
+def test_finish_idempotent_no_duplicate_violation(db, world):
+    p = _make_patrol(world, db, status=PatrolStatus.IN_PROGRESS, scanned=0)
+    validate_scan(db, p, world["cps"][0], world["guard"].id, "fi-1",
+                  NOW.replace(hour=10, minute=5), NOW)
+    finish_patrol(db, p, NOW.replace(hour=10, minute=30))
+    # повторный finish по закрытому обходу — роутер отсечёт, но движок тоже защищён
+    finish_patrol(db, p, NOW.replace(hour=10, minute=35))
+    assert db.query(Violation).filter(
+        Violation.kind == ViolationKind.MISSED_POINTS
+    ).count() == 1

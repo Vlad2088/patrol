@@ -14,6 +14,8 @@ from app.models import (
     ScanEvent,
     ScanResult,
     Shift,
+    Violation,
+    ViolationKind,
 )
 from app.schemas import (
     MobileCheckpoint,
@@ -25,7 +27,7 @@ from app.schemas import (
     ScanBatchIn,
     ScanResultOut,
 )
-from app.services.patrol_engine import validate_scan
+from app.services.patrol_engine import finish_patrol as engine_finish, validate_scan
 
 router = APIRouter()
 
@@ -181,23 +183,20 @@ def finish_patrol(
     db=Depends(get_db),
     user: CurrentUser = Depends(require_guard),
 ) -> PatrolStartOut:
+    """Ручное завершение: итог (COMPLETED/PARTIAL) виден диспетчеру сразу,
+    violation при частичном обходе фиксируется немедленно."""
     patrol = db.get(Patrol, patrol_id)
     if patrol is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Обход не найден")
-    if patrol.status != PatrolStatus.IN_PROGRESS:
-        return PatrolStartOut(ok=False, message=f"Статус: {patrol.status}")
-    if patrol.checkpoints_scanned < patrol.checkpoints_total:
-        # частичный: статус частично проставит автофиксация после окна,
-        # но факт завершения фиксируем сразу
-        patrol.finished_at = datetime.now(timezone.utc)
-        db.commit()
-        db.refresh(patrol)
-        return PatrolStartOut(
-            ok=True,
-            patrol=MobilePatrol.model_validate(patrol),
-            message="Завершён частично (будет проверен автофиксацией)",
-        )
-    return PatrolStartOut(ok=True, patrol=MobilePatrol.model_validate(patrol))
+    if patrol.status not in (PatrolStatus.PLANNED, PatrolStatus.IN_PROGRESS):
+        return PatrolStartOut(ok=False, message=f"Обход уже закрыт ({patrol.status.value})")
+    message = engine_finish(db, patrol, datetime.now(timezone.utc))
+    db.refresh(patrol)
+    return PatrolStartOut(
+        ok=True,
+        patrol=MobilePatrol.model_validate(patrol),
+        message=message,
+    )
 
 
 @router.get("/mobile/history", response_model=list[MobilePatrol])

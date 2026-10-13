@@ -85,6 +85,24 @@ class PatrolRepository(val dao: PatrolDao) {
         }
     }
 
+    /** Ручное завершение: сначала выгружаем очередь сканов, затем finish.
+     *  Локальный статус обновляем только при подтверждении сервера. */
+    suspend fun finishPatrol(patrolId: Long): String {
+        pushQueue() // отметки обязаны уйти раньше финиша
+        return try {
+            val r = ApiClient.api.finishPatrol(patrolId)
+            if (r.ok) {
+                val status = r.patrol?.status ?: "completed"
+                dao.setPatrolStatus(patrolId, status)
+                r.message.ifEmpty { "Обход завершён" }
+            } else {
+                r.message.ifEmpty { "Не удалось завершить обход" }
+            }
+        } catch (e: Exception) {
+            "Нет сети: отметки в очереди, завершите обход позже (после синхронизации)"
+        }
+    }
+
     suspend fun pendingCount(): Int = dao.pendingCount()
     suspend fun scannedCount(patrolId: Long): Int = dao.scannedCount(patrolId)
 }

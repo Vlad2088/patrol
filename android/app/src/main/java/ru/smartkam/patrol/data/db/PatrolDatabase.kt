@@ -81,6 +81,7 @@ interface PatrolDao {
     @Query("SELECT * FROM patrols WHERE status IN ('planned','in_progress') ORDER BY windowStart") suspend fun activePatrols(): List<PatrolEntity>
     @Query("SELECT * FROM patrols ORDER BY windowStart DESC LIMIT 100") suspend fun allPatrols(): List<PatrolEntity>
     @Query("SELECT * FROM patrols WHERE id = :id LIMIT 1") suspend fun patrol(id: Long): PatrolEntity?
+    @Query("UPDATE patrols SET status = :status WHERE id = :id") suspend fun setPatrolStatus(id: Long, status: String)
 
     @Query("DELETE FROM shifts") suspend fun clearShifts()
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertShifts(items: List<ShiftEntity>)

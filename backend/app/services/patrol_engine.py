@@ -168,6 +168,56 @@ def validate_scan(
     return (ScanResult.OUT_OF_WINDOW if out_of_window else ScanResult.ACCEPTED), event
 
 
+def finish_patrol(db: Session, patrol: Patrol, now: datetime) -> str:
+    """Ручное завершение обхода охранником: итог сразу виден диспетчеру.
+
+    Все точки пройдены -> COMPLETED; иначе -> PARTIAL + нарушение missed_points
+    (идемпотентно). Дальше автофиксация этот обход уже не трогает.
+    """
+    patrol.finished_at = now
+    if patrol.checkpoints_scanned >= patrol.checkpoints_total > 0:
+        patrol.status = PatrolStatus.COMPLETED
+        db.commit()
+        return "Обход завершён полностью"
+
+    done_ids = set(
+        db.scalars(
+            select(ScanEvent.checkpoint_id).where(ScanEvent.patrol_id == patrol.id)
+        )
+    )
+    missed = [
+        cp.code
+        for cp in db.scalars(
+            select(Checkpoint)
+            .where(Checkpoint.route_id == patrol.route_id)
+            .order_by(Checkpoint.order_num)
+        )
+        if cp.id not in done_ids
+    ]
+    has_violation = db.scalar(
+        select(Violation.id).where(
+            Violation.patrol_id == patrol.id,
+            Violation.kind == ViolationKind.MISSED_POINTS,
+        )
+    )
+    if not has_violation:
+        db.add(
+            Violation(
+                patrol_id=patrol.id,
+                kind=ViolationKind.MISSED_POINTS,
+                details={
+                    "missed_codes": missed,
+                    "scanned": patrol.checkpoints_scanned,
+                    "total": patrol.checkpoints_total,
+                    "manually_finished": True,
+                },
+            )
+        )
+    patrol.status = PatrolStatus.PARTIAL
+    db.commit()
+    return f"Завершён частично: {patrol.checkpoints_scanned} из {patrol.checkpoints_total} точек"
+
+
 def detect_violations(db: Session, now: datetime) -> int:
     """Автофиксация нарушений по истечении окна (+grace). Идемпотентна."""
     deadline = now - timedelta(minutes=settings.window_grace_after_min)

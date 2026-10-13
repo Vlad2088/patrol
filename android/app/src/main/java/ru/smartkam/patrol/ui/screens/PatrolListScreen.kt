@@ -119,6 +119,13 @@ fun PatrolListScreen(
                                 onOpenScanner(p.id)
                             }) { Text("Начать / сканировать") }
                             OutlinedButton(onClick = { onOpenPatrol(p.id) }) { Text("Прогресс") }
+                            TextButton(onClick = {
+                                message = "Завершаем..."
+                                graph.scope.launch {
+                                    message = repo.finishPatrol(p.id)
+                                    refresh()
+                                }
+                            }) { Text("Завершить") }
                         }
                     }
                 }
