@@ -70,7 +70,7 @@ fun HistoryScreen(onBack: () -> Unit) {
                         Text("Обход #${p.id} — ${STATUS_LABEL[p.status] ?: p.status}", fontSize = 16.sp)
                         Text(
                             "Точки: ${p.checkpointsScanned}/${p.checkpointsTotal} · " +
-                                "Окно: ${p.windowStart.take(16).replace('T', ' ')}",
+                                "Окно: ${p.windowStart.fmtWindow()}",
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.secondary,
                         )

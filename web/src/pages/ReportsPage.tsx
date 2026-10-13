@@ -3,7 +3,7 @@ import { useState } from "react";
 import { api, authStore } from "../api/client";
 import { Field } from "../components/ui";
 
-const iso = (d: Date) => d.toISOString().slice(0, 10);
+const iso = (d: Date) => { const off = d.getTimezoneOffset(); return new Date(d.getTime() - off * 60_000).toISOString().slice(0, 10); };
 
 function download(kind: "patrols" | "violations", fmt: "csv" | "xlsx", from: string, to: string) {
   const q = new URLSearchParams();

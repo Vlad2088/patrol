@@ -30,10 +30,6 @@ import ru.smartkam.patrol.data.AppGraph
 import ru.smartkam.patrol.data.TokenStore
 import ru.smartkam.patrol.data.db.PatrolEntity
 import ru.smartkam.patrol.data.db.RouteEntity
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-
-private val fmt = DateTimeFormatter.ISO_DATE_TIME
 
 @Composable
 fun PatrolListScreen(
@@ -129,10 +125,4 @@ fun PatrolListScreen(
             }
         }
     }
-}
-
-private fun String.fmtShort(): String = try {
-    LocalDateTime.parse(this, fmt).format(DateTimeFormatter.ofPattern("HH:mm"))
-} catch (_: Exception) {
-    this
 }

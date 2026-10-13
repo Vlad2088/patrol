@@ -3,8 +3,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { Table } from "../components/ui";
+import { todayIso } from "../lib/date";
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
 
 export default function DashboardPage() {
   const [date, setDate] = useState(todayIso());

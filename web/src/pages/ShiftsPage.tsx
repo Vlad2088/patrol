@@ -4,8 +4,8 @@ import type { FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { Field, Table } from "../components/ui";
+import { todayIso } from "../lib/date";
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
 
 export default function ShiftsPage() {
   const qc = useQueryClient();
